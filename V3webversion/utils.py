@@ -232,10 +232,19 @@ def plot_spot_gamma(dfAgg, strikes, fromStrike, toStrike, spotPrice):
 def plot_greeks_profiles(levels, spotPrice, totalGamma, totalGammaExNext, totalGammaExFri, 
                         totalVanna, totalCharm, todayDate, fromStrike, toStrike):
     """Plot Greeks profiles"""
+    # Create figure with subplots
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))
     
     # Find gamma flip point
-    zeroGamma = find_gamma_flip(levels, totalGamma)
+    zeroCrossIdx = np.where(np.diff(np.sign(totalGamma)))[0]
+    if len(zeroCrossIdx) > 0:
+        negGamma = totalGamma[zeroCrossIdx[0]]
+        posGamma = totalGamma[zeroCrossIdx[0]+1]
+        negStrike = levels[zeroCrossIdx[0]]
+        posStrike = levels[zeroCrossIdx[0]+1]
+        zeroGamma = posStrike - ((posStrike - negStrike) * posGamma/(posGamma-negGamma))
+    else:
+        zeroGamma = None
     
     # Gamma Profile
     ax1.grid(True)
@@ -246,13 +255,24 @@ def plot_greeks_profiles(levels, spotPrice, totalGamma, totalGammaExNext, totalG
     ax1.set_xlabel('Index Price', fontweight="bold")
     ax1.set_ylabel('Gamma ($ billions/1% move)', fontweight="bold")
     ax1.axvline(x=spotPrice, color='r', lw=1, label=f"Spot: {spotPrice:,.0f}")
+    
+    # Add gamma flip visualization
     if zeroGamma is not None:
         ax1.axvline(x=zeroGamma, color='g', lw=1, label=f"Flip: {zeroGamma:,.0f}")
+        # Add colored regions
+        ax1.fill_between([fromStrike, zeroGamma], 
+                        min(totalGamma), max(totalGamma), 
+                        facecolor='red', alpha=0.1, 
+                        transform=ax1.get_xaxis_transform())
+        ax1.fill_between([zeroGamma, toStrike], 
+                        min(totalGamma), max(totalGamma), 
+                        facecolor='green', alpha=0.1, 
+                        transform=ax1.get_xaxis_transform())
+    
     ax1.axhline(y=0, color='grey', lw=1)
     ax1.set_xlim([fromStrike, toStrike])
     ax1.legend()
     
-
     # Vanna Profile
     ax2.grid(True)
     ax2.plot(levels, totalVanna)
