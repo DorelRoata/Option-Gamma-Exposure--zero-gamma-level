@@ -41,21 +41,8 @@ toStrike = 1.2 * spotPrice
 
 # Get Today's Date
 dateLine = optionsFileData[2]
-todayDate = dateLine.split('Date: ')[1].split(',')
-monthDay = todayDate[0].split(' ')
-
-# Handling of US/EU date formats
-if len(monthDay) == 2:
-    year = int(todayDate[1])
-    month = monthDay[0]
-    day = int(monthDay[1])
-else:
-    year = int(monthDay[2])
-    month = monthDay[1]
-    day = int(monthDay[0])
-
-todayDate = datetime.strptime(month,'%B')
-todayDate = todayDate.replace(day=day, year=year)
+todayDate = dateLine.split('Date: ')[1].split(' at ')[0].strip()
+todayDate = datetime.strptime(todayDate, '%B %d, %Y')
 
 # Get SPX Options Data
 df = pd.read_csv(filename, sep=",", header=None, skiprows=4)
